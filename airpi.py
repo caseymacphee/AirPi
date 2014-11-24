@@ -1,4 +1,6 @@
-#This file takes in inputs from a variety of sensor files, and outputs information to a variety of services
+# This file takes in inputs from a variety of sensor files, and outputs information to a variety of services.
+# This script can be run from the command line 
+
 import sys
 sys.dont_write_bytecode = True
 
@@ -16,6 +18,15 @@ def get_subclasses(mod,cls):
 		if hasattr(obj, "__bases__") and cls in obj.__bases__:
 			return obj
 
+
+# This is the main method for airpi. It preconditions that the 'sensors.cfg' file needs to be in the current working
+# directory. The function utilizes the RPi GPIO library, and sets warnings to False and sets the GPIO mode to 'BCM'
+# -optionally(GPIO.BOARD). The function also requires the other modules of the package, 'settings.cfg', and
+# the gpio configuration module 'outputs.config' to be in the current working directory. The data from these configured
+# devices is either read or not depending on whether or not they have data.
+# The data is then sent to both output types in the config file (print, and xively)
+# If the device is getting it will turn the green led on, and conversely when
+# it doesn't, the red led will go on.
 
 if not os.path.isfile('sensors.cfg'):
 	print "Unable to access config file: sensors.cfg"
@@ -175,29 +186,31 @@ GPIO.setup(greenPin,GPIO.OUT,initial=GPIO.LOW)
 while True:
 	curTime = time.time()
 	if (curTime-lastUpdated)>delayTime:
+		#Only hitting if beyond the delay time specified
 		lastUpdated = curTime
 		data = []
 		#Collect the data from each sensor
-		for i in sensorPlugins:
+		for sensor in sensorPlugins:
 			dataDict = {}
-			val = i.getVal()
+			val = sensor.getVal()
 			if val==None: #this means it has no data to upload.
 				continue
-			dataDict["value"] = i.getVal()
-			dataDict["unit"] = i.valUnit
-			dataDict["symbol"] = i.valSymbol
-			dataDict["name"] = i.valName
-			dataDict["sensor"] = i.sensorName
+			dataDict["value"] = sensor.getVal()
+			dataDict["unit"] = sensor.valUnit
+			dataDict["symbol"] = sensor.valSymbol
+			dataDict["name"] = sensor.valName
+			dataDict["sensor"] = sensor.sensorName
 			data.append(dataDict)
 		working = True
-		for i in outputPlugins:
-			working = working and i.outputData(data)
+		for outputs in outputPlugins:
+			working = working and outputs.outputData(data)
 		if working:
 			print "Uploaded successfully"
 			GPIO.output(greenPin,GPIO.HIGH)
 		else:
 			print "Failed to upload"
 			GPIO.output(redPin,GPIO.HIGH)
+		#Sleeping interval of 1 second
 		time.sleep(1)
 		GPIO.output(greenPin,GPIO.LOW)
 		GPIO.output(redPin,GPIO.LOW)
