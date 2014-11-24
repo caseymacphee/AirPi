@@ -11,9 +11,8 @@ class Print(output.Output):
 	requiredData = []
 	optionalData = []
 
-	def __init__(self):
-		pass
-
+	def __init__(self, data):
+		pass	
 	def outputData(self,dataPoints):
 		print "Time: " + str(datetime.datetime.now())
 		for data_point in dataPoints:
